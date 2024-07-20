@@ -7,8 +7,9 @@
     "serve": "bun run src/index.tsx"
   },
   "dependencies": {
-    "hono": "^4",
-    "frog": "latest"
+    "@ethereum-attestation-service/eas-sdk": "^2.5.0",
+    "frog": "latest",
+    "hono": "^4"
   },
   "devDependencies": {
     "@types/bun": "latest",
