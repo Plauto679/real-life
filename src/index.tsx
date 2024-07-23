@@ -9,7 +9,7 @@ export const app = new Frog({
   title: 'oncedao',
   imageAspectRatio: '1:1',
   imageOptions: { width: 630, height: 1200 },
- // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
+  // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
 });
 
 // First frame
@@ -81,6 +81,7 @@ app.frame('/third', (c) => {
 
 // Fourth frame
 app.frame('/fourth', (c) => {
+  const { transactionId } = c;
   return c.res({
     image: (
       <div style={{
@@ -94,7 +95,7 @@ app.frame('/fourth', (c) => {
       </div>
     ),
     intents: [
-      <Button action="https://explorer.attestation.id">View in EAS explorer</Button>,
+      <Button.Link href={`https://sepolia.etherscan.io/tx/${transactionId}`}>View in explorer</Button.Link>,
     ],
   });
 });
@@ -130,7 +131,7 @@ app.transaction('/attest', async (c) => {
     schemaUID,
     requestData
   ];
- console.log(args)
+  console.log(args)
   return c.contract({
     abi,
     chainId: 'eip155:11155111',
