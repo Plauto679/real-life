@@ -1,16 +1,24 @@
-import { Button, Frog, parseEther, TextInput } from 'frog';
+import { Button, Frog, TextInput } from 'frog';
 import { devtools } from 'frog/dev';
-import { neynar } from 'frog/hubs';
+import { neynar, pinata } from 'frog/hubs';
 import { serveStatic } from 'frog/serve-static';
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { abi } from '../abi.js';
 
-export const app = new Frog({
+export const app = new Frog<{ State: State }>({
   title: 'oncedao',
   imageAspectRatio: '1:1',
   imageOptions: { width: 630, height: 1200 },
+  verify: true,
+  initialState: {
+    values:[]
+  }
   // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
+  //hub: pinata()
 });
+type State = {
+  values: string[]
+}
 
 // First frame
 app.frame('/', (c) => {
@@ -23,7 +31,7 @@ app.frame('/', (c) => {
         width: '100%',
         height: '100%',
       }}>
-        <img src="https://oncedao.s3.eu-central-1.amazonaws.com/image1.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        <img src="https://oncedao.xyz/wp-content/uploads/2024/07/Attest.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
       </div>
     ),
     intents: [
@@ -43,7 +51,7 @@ app.frame('/second', (c) => {
         width: '100%',
         height: '100%',
       }}>
-        <img src="https://oncedao.s3.eu-central-1.amazonaws.com/image2.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        <img src="https://oncedao.xyz/wp-content/uploads/2024/07/What.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
       </div>
     ),
     intents: [
@@ -57,7 +65,17 @@ app.frame('/second', (c) => {
 
 // Third frame
 app.frame('/third', (c) => {
-  const { buttonValue } = c;
+  const { buttonValue ,deriveState
+  } = c;
+
+  const state = deriveState(previousState => {
+    if (buttonValue) previousState.values.push(buttonValue)
+  })
+
+ 
+
+  console.log('button pre',state)
+
   console.log('Button value:', buttonValue);
 
   return c.res({
@@ -69,12 +87,12 @@ app.frame('/third', (c) => {
         width: '100%',
         height: '100%',
       }}>
-        <img src="https://oncedao.s3.eu-central-1.amazonaws.com/image3.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        <img src="https://oncedao.xyz/wp-content/uploads/2024/07/Who.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
       </div>
     ),
     intents: [
       <TextInput placeholder="ID/ENS/Address" />,
-      <Button.Transaction target='/attest' action="/fourth">Attest</Button.Transaction>,
+      <Button.Transaction target='/attest' action="/fourth" >Attest</Button.Transaction>,
     ],
   });
 });
@@ -91,7 +109,7 @@ app.frame('/fourth', (c) => {
         width: '100%',
         height: '100%',
       }}>
-        <img src="https://oncedao.s3.eu-central-1.amazonaws.com/image4.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        <img src="https://oncedao.xyz/wp-content/uploads/2024/07/Congrats.png" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
       </div>
     ),
     intents: [
@@ -102,22 +120,29 @@ app.frame('/fourth', (c) => {
 
 // Attestation transaction
 app.transaction('/attest', async (c) => {
-  const { inputText, buttonValue, address } = c;
+ 
+  
+  const { address, inputText,previousState,frameData } = c
+  
+ 
   console.table([
     { Label: 'Input Text', Value: inputText },
-    { Label: 'Button Value', Value: buttonValue },
+    { Label: 'Button Value', Value: previousState.values.toString() },
     { Label: 'Address', Value: address }
   ]);
 
 
-  const schemaUID = "0x9BA4C8CB4D768FC0944A88CA9EAE53F5A4417D5C5EEAE40F9CD7CA6B0054DE59";
-  const schemaString = "bytes32 activity, address partner";
+  const schemaUID = "0x6300691fac046f07d74a15cb0d6e171f16a7ae3e08de8536ae0a1bb5a111596a";
+  const schemaString = "string Actividad,uint32 Dia_y_Hora,string Detalle";
   const schemaEncoder = new SchemaEncoder(schemaString);
   const encodedData = schemaEncoder.encodeData([
-    { name: "activity", value: buttonValue || '', type: "bytes32" },
-    { name: "partner", value: inputText || '', type: "address" },
+    { name: "Actividad", value: previousState.values.toString() || '', type: "string" },
+    { name: "Dia_y_Hora", value: 1721923551 || '', type: "uint32" },
+    { name: "Detalle", value: inputText || '', type: "string" },
   ]);
 
+  console.log( Math.floor(new Date().getTime() / 1000) )
+  
   const requestData = [
     address, // Address partner
     0, // expiration time
@@ -131,17 +156,17 @@ app.transaction('/attest', async (c) => {
     schemaUID,
     requestData
   ];
-  console.log(args)
   return c.contract({
     abi,
-    chainId: 'eip155:11155111',
+    chainId: 'eip155:42161',
     functionName: 'attest',
     args: [args],
-    to: '0xC2679fBD37d54388Ce493F1DB75320D236e1815e'
+    to: '0xbD75f629A22Dc1ceD33dDA0b68c546A1c035c458'
   });
 });
 
-// app.use('/*', serveStatic({ root: './public' }));
+app.use('/*', serveStatic({ root: './public' }));
+
 devtools(app, { serveStatic });
 
 if (typeof Bun !== 'undefined') {
