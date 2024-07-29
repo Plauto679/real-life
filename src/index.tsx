@@ -1,6 +1,5 @@
 import { Button, Frog, TextInput } from 'frog';
-import { devtools } from 'frog/dev';
-import { neynar, pinata } from 'frog/hubs';
+import { neynar } from 'frog/hubs';
 import { serveStatic } from 'frog/serve-static';
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { abi } from '../abi.js';
@@ -14,14 +13,12 @@ export const app = new Frog<{ State: State }>({
   initialState: {
     values:[]
   },
-   hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
-  //hub: pinata()
+   hub: neynar({ apiKey: 'NEYNAR_FROG_FM' }) // This must be updated in the future 
 });
 type State = {
   values: string[]
 }
 
-// First frame
 app.frame('/', (c) => {
   return c.res({
     image: (
@@ -41,7 +38,6 @@ app.frame('/', (c) => {
   });
 });
 
-// Second frame
 app.frame('/second', (c) => {
   return c.res({
     image: (
@@ -64,7 +60,6 @@ app.frame('/second', (c) => {
   });
 });
 
-// Third frame
 app.frame('/third', (c) => {
   const { buttonValue ,deriveState
   } = c;
@@ -92,7 +87,6 @@ app.frame('/third', (c) => {
   });
 });
 
-// Fourth frame
 app.frame('/fourth', (c) => {
   const { transactionId } = c;
   return c.res({
@@ -113,20 +107,13 @@ app.frame('/fourth', (c) => {
   }); 
 });
 
-// Attestation transaction
 app.transaction('/attest', async (c) => {
- 
-  
   const { address, inputText,previousState } = c
-  
- 
   console.table([
     { Label: 'Input Text', Value: inputText },
     { Label: 'Button Value', Value: previousState.values.toString() },
     { Label: 'Address', Value: address }
   ]);
-
-
   const schemaUID = "0x6300691fac046f07d74a15cb0d6e171f16a7ae3e08de8536ae0a1bb5a111596a";
   const schemaString = "string Actividad,uint32 Dia_y_Hora,string Detalle";
   const schemaEncoder = new SchemaEncoder(schemaString);
@@ -135,9 +122,6 @@ app.transaction('/attest', async (c) => {
     { name: "Dia_y_Hora", value: Math.floor(new Date().getTime() / 1000) || '', type: "uint32" },
     { name: "Detalle", value: inputText || '', type: "string" },
   ]);
-
-
-  
   const requestData = [
     address, // Address partner
     0, // expiration time
@@ -146,7 +130,6 @@ app.transaction('/attest', async (c) => {
     encodedData, // Encoded data
     0 // value
   ];
-
   const args = [
     schemaUID,
     requestData
@@ -162,7 +145,6 @@ app.transaction('/attest', async (c) => {
 
 app.use('/*', serveStatic({ root: './public' }));
 
-devtools(app, { serveStatic });
 
 if (typeof Bun !== 'undefined') {
   Bun.serve({
