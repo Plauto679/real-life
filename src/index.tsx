@@ -7,13 +7,14 @@ import { abi } from '../abi.js';
 
 export const app = new Frog<{ State: State }>({
   title: 'oncedao',
+  basePath:'/api',
   imageAspectRatio: '1:1',
   imageOptions: { width: 630, height: 1200 },
-  verify: true,
+  verify: false,
   initialState: {
     values:[]
-  }
-  // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
+  },
+   hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
   //hub: pinata()
 });
 type State = {
@@ -72,12 +73,6 @@ app.frame('/third', (c) => {
     if (buttonValue) previousState.values.push(buttonValue)
   })
 
- 
-
-  console.log('button pre',state)
-
-  console.log('Button value:', buttonValue);
-
   return c.res({
     image: (
       <div style={{
@@ -113,16 +108,16 @@ app.frame('/fourth', (c) => {
       </div>
     ),
     intents: [
-      <Button.Link href={`https://sepolia.etherscan.io/tx/${transactionId}`}>View in explorer</Button.Link>,
+      <Button.Link href={`https://arbiscan.io/tx/${transactionId}`}>View in explorer</Button.Link>,
     ],
-  });
+  }); 
 });
 
 // Attestation transaction
 app.transaction('/attest', async (c) => {
  
   
-  const { address, inputText,previousState,frameData } = c
+  const { address, inputText,previousState } = c
   
  
   console.table([
@@ -137,11 +132,11 @@ app.transaction('/attest', async (c) => {
   const schemaEncoder = new SchemaEncoder(schemaString);
   const encodedData = schemaEncoder.encodeData([
     { name: "Actividad", value: previousState.values.toString() || '', type: "string" },
-    { name: "Dia_y_Hora", value: 1721923551 || '', type: "uint32" },
+    { name: "Dia_y_Hora", value: Math.floor(new Date().getTime() / 1000) || '', type: "uint32" },
     { name: "Detalle", value: inputText || '', type: "string" },
   ]);
 
-  console.log( Math.floor(new Date().getTime() / 1000) )
+
   
   const requestData = [
     address, // Address partner
