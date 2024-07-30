@@ -1,26 +1,24 @@
 import { Button, Frog, TextInput } from 'frog';
-import { devtools } from 'frog/dev';
-import { neynar, pinata } from 'frog/hubs';
+import { neynar } from 'frog/hubs';
 import { serveStatic } from 'frog/serve-static';
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { abi } from '../abi.js';
 
 export const app = new Frog<{ State: State }>({
   title: 'oncedao',
+  basePath:'/api',
   imageAspectRatio: '1:1',
   imageOptions: { width: 630, height: 1200 },
-  verify: true,
+  verify: false,
   initialState: {
     values:[]
-  }
-  // hub: neynar({ apiKey: 'NEYNAR_FROG_FM' })
-  //hub: pinata()
+  },
+   hub: neynar({ apiKey: 'NEYNAR_FROG_FM' }) // This must be updated in the future 
 });
 type State = {
   values: string[]
 }
 
-// First frame
 app.frame('/', (c) => {
   return c.res({
     image: (
@@ -40,7 +38,6 @@ app.frame('/', (c) => {
   });
 });
 
-// Second frame
 app.frame('/second', (c) => {
   return c.res({
     image: (
@@ -63,7 +60,6 @@ app.frame('/second', (c) => {
   });
 });
 
-// Third frame
 app.frame('/third', (c) => {
   const { buttonValue ,deriveState
   } = c;
@@ -71,12 +67,6 @@ app.frame('/third', (c) => {
   const state = deriveState(previousState => {
     if (buttonValue) previousState.values.push(buttonValue)
   })
-
- 
-
-  console.log('button pre',state)
-
-  console.log('Button value:', buttonValue);
 
   return c.res({
     image: (
@@ -97,7 +87,6 @@ app.frame('/third', (c) => {
   });
 });
 
-// Fourth frame
 app.frame('/fourth', (c) => {
   const { transactionId } = c;
   return c.res({
@@ -113,36 +102,26 @@ app.frame('/fourth', (c) => {
       </div>
     ),
     intents: [
-      <Button.Link href={`https://sepolia.etherscan.io/tx/${transactionId}`}>View in explorer</Button.Link>,
+      <Button.Link href={`https://arbiscan.io/tx/${transactionId}`}>View in explorer</Button.Link>,
     ],
-  });
+  }); 
 });
 
-// Attestation transaction
 app.transaction('/attest', async (c) => {
- 
-  
-  const { address, inputText,previousState,frameData } = c
-  
- 
+  const { address, inputText,previousState } = c
   console.table([
     { Label: 'Input Text', Value: inputText },
     { Label: 'Button Value', Value: previousState.values.toString() },
     { Label: 'Address', Value: address }
   ]);
-
-
   const schemaUID = "0x6300691fac046f07d74a15cb0d6e171f16a7ae3e08de8536ae0a1bb5a111596a";
   const schemaString = "string Actividad,uint32 Dia_y_Hora,string Detalle";
   const schemaEncoder = new SchemaEncoder(schemaString);
   const encodedData = schemaEncoder.encodeData([
     { name: "Actividad", value: previousState.values.toString() || '', type: "string" },
-    { name: "Dia_y_Hora", value: 1721923551 || '', type: "uint32" },
+    { name: "Dia_y_Hora", value: Math.floor(new Date().getTime() / 1000) || '', type: "uint32" },
     { name: "Detalle", value: inputText || '', type: "string" },
   ]);
-
-  console.log( Math.floor(new Date().getTime() / 1000) )
-  
   const requestData = [
     address, // Address partner
     0, // expiration time
@@ -151,7 +130,6 @@ app.transaction('/attest', async (c) => {
     encodedData, // Encoded data
     0 // value
   ];
-
   const args = [
     schemaUID,
     requestData
@@ -167,7 +145,6 @@ app.transaction('/attest', async (c) => {
 
 app.use('/*', serveStatic({ root: './public' }));
 
-devtools(app, { serveStatic });
 
 if (typeof Bun !== 'undefined') {
   Bun.serve({
